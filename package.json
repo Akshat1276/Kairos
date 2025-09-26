@@ -9,16 +9,14 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@nomicfoundation/hardhat-ignition": "^3.0.3",
-    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
     "@types/chai": "^4.3.20",
     "@types/chai-as-promised": "^8.0.2",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.18.6",
-    "chai": "^5.3.3",
     "ethers": "^6.15.0",
     "forge-std": "github:foundry-rs/forge-std#v1.9.4",
-    "hardhat": "^3.0.6",
+    "hardhat": "^2.26.3",
     "mocha": "^11.7.2",
     "typescript": "~5.8.0"
   },
@@ -29,6 +27,7 @@
     "ansi-regex": "^5.0.1",
     "chalk": "^5.6.2",
     "debug": "^4.4.3",
+    "dotenv": "^17.2.2",
     "enquirer": "^2.4.1",
     "env-paths": "^2.2.1",
     "esbuild": "^0.25.10",
@@ -50,7 +49,7 @@
     "ws": "^8.18.3",
     "zod": "^3.25.76"
   },
-  "description": "",
+  "description": "This project showcases a Hardhat 3 Beta project using `mocha` for tests and the `ethers` library for Ethereum interactions.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Akshat1276/Kairos.git"
@@ -59,5 +58,7 @@
     "url": "https://github.com/Akshat1276/Kairos/issues"
   },
   "homepage": "https://github.com/Akshat1276/Kairos#readme",
-  "type": "module"
+  "directories": {
+    "test": "test"
+  }
 }
