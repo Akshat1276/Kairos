@@ -41,10 +41,11 @@ Kairos is an intelligent arbitrage agent that:
 - ✅ **Quote comparison** for arbitrage detection
 
 ### Hedera Track ✅
+- ✅ **Hedera SDK integration** for real HBAR transfers
 - ✅ **Hedera Mirror Node API** integration
 - ✅ **Testnet account** setup and balance monitoring
 - ✅ **Cross-chain price comparison** between Polygon and Hedera
-- ✅ **Token information fetching** from Hedera network
+- ✅ **Real transaction execution** on Hedera testnet
 
 ## 📋 Features
 
@@ -55,17 +56,18 @@ Kairos is an intelligent arbitrage agent that:
 - **Risk Management**: Configurable profit thresholds and gas limits
 
 ### Cross-Chain Capabilities
-- **Polygon Integration**: Direct smart contract interaction with web3.py
-- **Hedera Integration**: REST API integration with Mirror Node
+- **Polygon Integration**: Real smart contract interaction with web3.py
+- **Hedera Integration**: Real HBAR transfers using Hedera SDK
 - **Price Synchronization**: Real-time comparison across networks
-- **Opportunity Alerts**: Automated detection with detailed logging
+- **Automated Execution**: Smart trade routing to most profitable chain
 
 ## 🛠️ Technical Stack
 
 - **Smart Contracts**: Solidity, Hardhat, OpenZeppelin
-- **Backend**: Python, web3.py, requests
+- **Backend**: Python, web3.py, requests, Hedera SDK
 - **APIs**: 1inch Swap API, Hedera Mirror Node API
 - **Networks**: Polygon Amoy, Hedera Testnet
+- **Notifications**: Desktop notifications via plyer
 - **Security**: Environment variables, private key management
 
 ## 📦 Installation & Setup
@@ -74,6 +76,7 @@ Kairos is an intelligent arbitrage agent that:
 ```bash
 Node.js >= 16
 Python >= 3.8
+Java JDK >= 11 (required for Hedera SDK)
 ```
 
 ### Environment Setup
@@ -117,16 +120,16 @@ python kairos_agent.py
 
 ### 2. Arbitrage Detection
 ```python
-# Example detection logic
+# Cross-chain profit comparison
 polygon_rate = get_quote(WETH, USDC, amount)
-hedera_rate = get_hedera_token_price(token_id)
+hedera_balance = get_hedera_account_balance()
 profit_opportunity = detect_cross_chain_arbitrage(polygon_rate, hedera_rate)
 ```
 
 ### 3. Trade Execution
-- **Profitable trades**: Automatically executed via smart contract
-- **Cross-chain opportunities**: Logged and prepared for execution
-- **Transaction confirmations**: Full hash tracking and verification
+- **Polygon trades**: Smart contract execution via web3.py
+- **Hedera trades**: Real HBAR transfers via Hedera SDK
+- **Transaction confirmations**: Full hash tracking and verification on both networks
 
 ## 📊 Sample Output
 
@@ -139,11 +142,11 @@ INFO: 4000 USDC -> WETH: {'toAmount': '996777754548471203'}
 Hedera Account 0.0.6914928 HBAR balance: 1000.0
 
 === CROSS-CHAIN ARBITRAGE ANALYSIS ===
-INFO: Polygon WETH/USDC rate: 3986.172438
-INFO: Hedera WETH/USDC rate (simulated): 4105.757611
-INFO: Price difference: 3.0000%
-INFO: 🚀 CROSS-CHAIN ARBITRAGE OPPORTUNITY DETECTED!
-INFO: Strategy: Buy low on Polygon, sell high on Hedera
+INFO: Polygon: Swap 1 WETH -> 3986.172438 USDC, then 4000 USDC -> 0.996778 WETH
+INFO: Net WETH after Polygon round-trip: -0.003222
+INFO: Hedera: Trade 10 HBAR, profit: 0.3
+INFO: Best arbitrage: Hedera
+INFO: Executing real Hedera trade: Transfer 10 HBAR
 ```
 
 ## 🏆 ETHGlobal Achievements
@@ -159,15 +162,25 @@ INFO: Strategy: Buy low on Polygon, sell high on Hedera
 - **Comprehensive testing** with live network integration
 
 ### Track Requirements Met
-- ✅ **Polygon**: Smart contract deployment and interaction
+- ✅ **Polygon**: Smart contract deployment and real trade execution
 - ✅ **1inch**: API integration and swap quote utilization  
-- ✅ **Hedera**: Network integration and cross-chain functionality
+- ✅ **Hedera**: SDK integration with real HBAR transfers
 
 ## 🔗 Contract Information
 
 **Network**: Polygon Amoy Testnet  
 **Contract Address**: `0x732bF24499402c33BFddfceA22f95F366cdf60A8`  
 **Verification**: Verified on PolygonScan
+
+## 🔍 Transaction Verification
+
+### Polygon Transactions
+- **Explorer**: [PolygonScan Amoy](https://amoy.polygonscan.com/)
+- **Format**: `https://amoy.polygonscan.com/tx/{transaction_hash}`
+
+### Hedera Transactions  
+- **Explorer**: [HashScan Testnet](https://hashscan.io/testnet/)
+- **Format**: `https://hashscan.io/testnet/transaction/{transaction_id}`
 
 ## 🚀 Future Enhancements
 
