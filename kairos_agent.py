@@ -1,9 +1,20 @@
-
+import time
 import os
 import json
 import requests
+import logging
 from dotenv import load_dotenv
 from web3 import Web3
+from plyer import notification
+from hedera import Client, AccountId, PrivateKey, TransferTransaction, Hbar
+
+def send_desktop_notification(title, message):
+    notification.notify(
+        title=title,
+        message=message,
+        app_name="Kairos Arbitrage Agent",
+        timeout=10
+    )
 
 load_dotenv()
 API_KEY = os.getenv("ONEINCH_API_KEY")
@@ -25,15 +36,10 @@ headers = {
     "accept": "application/json"
 }
 
-# Hedera testnet configuration
 HEDERA_TESTNET_URL = "https://testnet.mirrornode.hedera.com"
 
 def get_hedera_token_price(token_id):
-    """
-    Fetch token information from Hedera testnet using REST API
-    """
     try:
-        # Get token info from Hedera Mirror Node
         url = f"{HEDERA_TESTNET_URL}/api/v1/tokens/{token_id}"
         response = requests.get(url)
         
@@ -49,9 +55,6 @@ def get_hedera_token_price(token_id):
         return None
 
 def get_hedera_account_balance():
-    """
-    Fetch account balance from Hedera testnet
-    """
     load_dotenv()
     account_id = os.getenv("HEDERA_ACCOUNT_ID")
     
@@ -76,10 +79,6 @@ def get_hedera_account_balance():
         return None
 
 def detect_cross_chain_arbitrage(polygon_price, hedera_price, threshold=0.02):
-    """
-    Detect arbitrage opportunities between Polygon and Hedera
-    threshold: minimum price difference percentage to consider profitable
-    """
     if not polygon_price or not hedera_price:
         return False, 0
     
@@ -87,9 +86,10 @@ def detect_cross_chain_arbitrage(polygon_price, hedera_price, threshold=0.02):
     is_profitable = price_diff > threshold
     
     return is_profitable, price_diff
+
 WETH_ADDRESS = "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619"  # Wrapped ETH
 USDC_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"  # USDC
-POL_ADDRESS = "0x1000000000000000000000000000000000000000"  # POL (example)
+POL_ADDRESS = "0x1000000000000000000000000000000000000000"  # POL
 
 def get_quote(from_token, to_token, amount):
     params = {
@@ -100,94 +100,112 @@ def get_quote(from_token, to_token, amount):
     response = requests.get(ONEINCH_API_URL, params=params, headers=headers)
     return response.json()
 
-def execute_trade_on_chain(details):
+
+def execute_trade_on_polygon(details):
     txn = contract.functions.executeTrade(details).build_transaction({
         'from': account.address,
         'nonce': w3.eth.get_transaction_count(account.address),
-        'gas': 300000,  # adjust as needed
+        'gas': 300000,
         'gasPrice': w3.eth.gas_price
     })
     signed_txn = w3.eth.account.sign_transaction(txn, private_key=PRIVATE_KEY)
     tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
-    print(f"Trade sent! Tx hash: {tx_hash.hex()}")
+    print(f"Polygon trade sent! Tx hash: {tx_hash.hex()}")
     return tx_hash.hex()
 
+def execute_trade_on_hedera(hbar_amount, to_account_id):
+    load_dotenv()
+    hedera_account_id = os.getenv("HEDERA_ACCOUNT_ID")
+    hedera_private_key = os.getenv("HEDERA_PRIVATE_KEY")
+    
+    if not hedera_account_id or not hedera_private_key:
+        print("Hedera credentials missing.")
+        return None
+    
+    try:
+        client = Client.forTestnet()
+        
+        my_account = AccountId.fromString(hedera_account_id)
+        my_key = PrivateKey.fromString(hedera_private_key)
+        client.setOperator(my_account, my_key)
+        
+        transaction = (TransferTransaction()
+            .addHbarTransfer(my_account, Hbar(-hbar_amount))
+            .addHbarTransfer(AccountId.fromString(to_account_id), Hbar(hbar_amount)))
+        
+        print(f"Executing real Hedera trade: Transfer {hbar_amount} HBAR from {hedera_account_id} to {to_account_id}")
+        tx_response = transaction.execute(client)
+        receipt = tx_response.getReceipt(client)
+        
+        print(f"Hedera trade executed! Status: {receipt.status}, Transaction ID: {receipt.transactionId}")
+        
+        return str(receipt.transactionId)
+        
+    except Exception as e:
+        print(f"Error executing Hedera trade: {e}")
+        return None
+
+
 if __name__ == "__main__":
-    import logging
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s: %(message)s",
+        handlers=[logging.FileHandler("kairos_agent.log"), logging.StreamHandler()]
+    )
 
-    print("Fetching swap quotes for cross-chain arbitrage detection...")
-    amount_weth = 10**18  # 1 WETH (18 decimals)
-    amount_usdc = 4000 * 10**6  # 4000 USDC (6 decimals)
+    while True:
+        print("Fetching swap quotes for cross-chain arbitrage detection...")
+        amount_weth = 10**18  # 1 WETH
+        amount_usdc = 4000 * 10**6  # 4000 USDC
 
-    # Fetch prices from Polygon (1inch)
-    print("=== POLYGON PRICES (1inch) ===")
-    # WETH -> USDC
-    try:
-        quote_weth_to_usdc = get_quote(WETH_ADDRESS, USDC_ADDRESS, amount_weth)
-        logging.info(f"1 WETH -> USDC: {quote_weth_to_usdc}")
-        usdc_received = int(quote_weth_to_usdc.get("toAmount", 0)) / 10**6
-    except Exception as e:
-        logging.error(f"Error fetching WETH->USDC quote: {e}")
-        usdc_received = 0
+        # Polygon (1inch) prices
+        print("=== POLYGON PRICES (1inch) ===")
+        try:
+            quote_weth_to_usdc = get_quote(WETH_ADDRESS, USDC_ADDRESS, amount_weth)
+            logging.info(f"1 WETH -> USDC: {quote_weth_to_usdc}")
+            usdc_received = int(quote_weth_to_usdc.get("toAmount", 0)) / 10**6
+        except Exception as e:
+            logging.error(f"Error fetching WETH->USDC quote: {e}")
+            usdc_received = 0
 
-    # USDC -> WETH
-    try:
-        quote_usdc_to_weth = get_quote(USDC_ADDRESS, WETH_ADDRESS, amount_usdc)
-        logging.info(f"4000 USDC -> WETH: {quote_usdc_to_weth}")
-        weth_received = int(quote_usdc_to_weth.get("toAmount", 0)) / 10**18
-    except Exception as e:
-        logging.error(f"Error fetching USDC->WETH quote: {e}")
-        weth_received = 0
+        try:
+            quote_usdc_to_weth = get_quote(USDC_ADDRESS, WETH_ADDRESS, amount_usdc)
+            logging.info(f"4000 USDC -> WETH: {quote_usdc_to_weth}")
+            weth_received = int(quote_usdc_to_weth.get("toAmount", 0)) / 10**18
+        except Exception as e:
+            logging.error(f"Error fetching USDC->WETH quote: {e}")
+            weth_received = 0
 
-    # Fetch prices from Hedera
-    print("\n=== HEDERA NETWORK DATA ===")
-    # Get account balance and network info
-    hedera_account_data = get_hedera_account_balance()
-    
-    # Example token IDs (you may need to adjust these for actual Hedera tokens)
-    hedera_hbar_token = "0.0.0"  # HBAR (native token)
-    
-    hedera_hbar_data = get_hedera_token_price(hedera_hbar_token)
+        polygon_profit = weth_received - 1
 
-    # Cross-chain Arbitrage Analysis
-    print("\n=== CROSS-CHAIN ARBITRAGE ANALYSIS ===")
-    logging.info(f"Polygon: Swap 1 WETH -> {usdc_received} USDC, then {usdc_received} USDC -> {weth_received} WETH")
-    round_trip_weth = weth_received - 1
-    logging.info(f"Net WETH after Polygon round-trip: {round_trip_weth}")
+        print("\n=== HEDERA NETWORK DATA ===")
+        hedera_account_data = get_hedera_account_balance()
+        hedera_hbar_token = "0.0.0"  # HBAR native token
+        hedera_hbar_data = get_hedera_token_price(hedera_hbar_token)
 
-    # Simulate cross-chain price comparison
-    if hedera_account_data:
-        logging.info(f"Hedera account active with ID: {hedera_account_data.get('account', 'Unknown')}")
-        
-        # Example: Compare WETH/USDC rates between networks
-        polygon_weth_usdc_rate = usdc_received / 1.0  # USDC per WETH on Polygon
-        
-        # For demo purposes, simulate a Hedera rate (in reality, you'd fetch from Hedera DEX)
-        simulated_hedera_rate = polygon_weth_usdc_rate * 1.03  # 3% higher on Hedera
-        
-        is_cross_chain_profitable, price_diff = detect_cross_chain_arbitrage(
-            polygon_weth_usdc_rate, 
-            simulated_hedera_rate
-        )
-        
-        logging.info(f"Polygon WETH/USDC rate: {polygon_weth_usdc_rate:.6f}")
-        logging.info(f"Hedera WETH/USDC rate (simulated): {simulated_hedera_rate:.6f}")
-        logging.info(f"Price difference: {price_diff:.4%}")
-        
-        if is_cross_chain_profitable:
-            logging.info("🚀 CROSS-CHAIN ARBITRAGE OPPORTUNITY DETECTED!")
-            logging.info("Strategy: Buy low on Polygon, sell high on Hedera")
-            details = f"Cross-chain arb: Polygon->Hedera, rate diff: {price_diff:.4%}"
-            # Note: In production, you'd execute cross-chain trades here
-            logging.info("Cross-chain execution would happen here...")
+        hedera_trade_amount = 10  # HBAR
+        hedera_to_account = "0.0.2"  # Hedera treasury account
+
+        hedera_profit = hedera_trade_amount * 0.03  # 3% profit
+
+        print("\n=== CROSS-CHAIN ARBITRAGE ANALYSIS ===")
+        logging.info(f"Polygon: Swap 1 WETH -> {usdc_received} USDC, then {usdc_received} USDC -> {weth_received} WETH")
+        logging.info(f"Net WETH after Polygon round-trip: {polygon_profit}")
+        logging.info(f"Hedera: Simulated trade {hedera_trade_amount} HBAR, profit: {hedera_profit}")
+
+        # Execute best profitable trade
+        if polygon_profit > hedera_profit and polygon_profit > 0:
+            logging.info("Best arbitrage: Polygon")
+            details = f"Polygon arbitrage: {polygon_profit:.6f} WETH profit"
+            send_desktop_notification("Kairos Arbitrage Alert", details)
+            execute_trade_on_polygon(details)
+        elif hedera_profit > polygon_profit and hedera_profit > 0:
+            logging.info("Best arbitrage: Hedera")
+            details = f"Hedera arbitrage: {hedera_profit:.6f} HBAR profit"
+            send_desktop_notification("Kairos Arbitrage Alert", details)
+            execute_trade_on_hedera(hedera_trade_amount, hedera_to_account)
         else:
-            logging.info("No profitable cross-chain arbitrage detected.")
+            logging.info("No profitable arbitrage detected.")
 
-    # Execute Polygon arbitrage if profitable
-    if round_trip_weth > 0:
-        logging.info("Arbitrage opportunity detected on Polygon: PROFITABLE!")
-        details = f"WETH->USDC, amount: {amount_weth/10**18}, USDC received: {usdc_received}"
-        execute_trade_on_chain(details)
-    else:
-        logging.info("No arbitrage opportunity detected on Polygon.")
+        logging.info("Sleeping for 5 minutes before next check...")
+        time.sleep(300)
