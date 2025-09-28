@@ -107,10 +107,51 @@ HEDERA_PRIVATE_KEY=your_hedera_private_key
 npx hardhat run scripts/deploy.cjs --network amoy
 ```
 
-### Run Arbitrage Agent
+### Run with Frontend Dashboard (Recommended)
 ```bash
-python kairos_agent.py
+# Quick start - runs both API server and frontend
+start-dashboard.bat  # Windows
+
+# Manual setup:
+# Terminal 1 - API Server
+python api_server.py
+
+# Terminal 2 - Frontend (in ./frontend directory)
+cd frontend
+npm install
+npm run dev
 ```
+
+### Run Agent Only (Command Line)
+```bash
+# Activate virtual environment (if using venv)
+venv/Scripts/activate  # Windows
+source venv/bin/activate  # Linux/Mac
+
+# Run the agent
+python kairos_agent.py
+
+# Or run directly with venv path (without activation)
+./venv/Scripts/python.exe kairos_agent.py  # Windows
+./venv/bin/python kairos_agent.py          # Linux/Mac
+```
+
+## 🖥️ Frontend Dashboard
+
+The Kairos dashboard provides a comprehensive interface for monitoring and controlling your arbitrage agent:
+
+### Features:
+- **🎮 Agent Control**: Start/stop the arbitrage agent with one click
+- **⏱️ Live Timer**: Countdown to next execution cycle (5-minute intervals)
+- **💰 Balance Monitoring**: Real-time Polygon and Hedera account balances
+- **📊 Trade History**: Recent arbitrage trades with profit tracking
+- **🔗 Transaction Links**: Direct links to PolygonScan and HashScan explorers
+- **📝 Live Logs**: Real-time agent logs and status updates
+- **🔔 Notifications**: Desktop alerts for successful trades and status changes
+
+### Access:
+- **Frontend Dashboard**: http://localhost:3000
+- **API Server**: http://localhost:8000
 
 ## 💡 How It Works
 
@@ -151,16 +192,6 @@ INFO: Executing real Hedera trade: Transfer 10 HBAR
 
 ## 🏆 ETHGlobal Achievements
 
-### Innovation
-- **First cross-chain arbitrage agent** combining Polygon and Hedera
-- **Real-time multi-network monitoring** with automated execution
-- **Partner API integration** across three major tracks
-
-### Technical Excellence
-- **Production-ready code** with error handling and logging
-- **Smart contract verification** on Polygon testnet
-- **Comprehensive testing** with live network integration
-
 ### Track Requirements Met
 - ✅ **Polygon**: Smart contract deployment and real trade execution
 - ✅ **1inch**: API integration and swap quote utilization  
@@ -182,16 +213,6 @@ INFO: Executing real Hedera trade: Transfer 10 HBAR
 - **Explorer**: [HashScan Testnet](https://hashscan.io/testnet/)
 - **Format**: `https://hashscan.io/testnet/transaction/{transaction_id}`
 
-## 🚀 Future Enhancements
-
-- **Multi-DEX Integration**: Expand beyond 1inch to include SushiSwap, Uniswap
-- **Advanced Algorithms**: ML-based opportunity prediction
-- **Flash Loan Integration**: Capital-efficient arbitrage execution
-- **Real Cross-Chain Execution**: Full automated cross-chain trade execution
-
-## 👥 Team
-
-Built for ETHGlobal hackathon with ❤️
 
 ---
 
