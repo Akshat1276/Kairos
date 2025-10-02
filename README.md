@@ -5,6 +5,12 @@
 
 A sophisticated cross-chain arbitrage detection and execution agent that identifies profitable trading opportunities between Polygon and Hedera networks.
 
+## Demo Images
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/e7588d8f-004f-40a1-ade6-9de2513a6de8" />
+<img width="1900" height="902" alt="image" src="https://github.com/user-attachments/assets/ef9f1f2d-ddc2-438c-9e6e-48b48eba5b32" />
+<img width="1911" height="920" alt="image" src="https://github.com/user-attachments/assets/bf9230aa-b4f7-4484-8401-c100202f9c93" />
+
+
 ## 🎯 Project Overview
 
 Kairos is an intelligent arbitrage agent that:
